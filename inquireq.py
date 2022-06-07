@@ -3,6 +3,7 @@ import re
 import pymqi
 import argparse
 import sys
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,11 +14,11 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description="Inquire and print Queue parameters from a queue manager",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-e", "--environment", help="valid values DR or PRD", nargs='?', const='DR')
-parser.add_argument("-u", "--user", help="user",  help="User")
+parser.add_argument("-e", "--environment", help="valid values DR or PRD", nargs='?', default='DR')
+parser.add_argument("-u", "--user", help="user")
 parser.add_argument("-p", "--password", help="password")
-parser.add_argument("-q", "--queuemanager", help="Queue manager to enquire", nargs='?', const="CMPRODQM_WCS")
-parser.add_argument("-c", "--channel", help="Channel to enquire", nargs='?', const="CLOUD.APP.SVRCONN")
+parser.add_argument("-q", "--queuemanager", help="Queue manager to enquire", nargs='?', default="CMPRODQM_WCS")
+parser.add_argument("-c", "--channel", help="Channel to enquire", nargs='?', default="CLOUD.APP.SVRCONN")
 parser.add_argument("-f", "--full", help="full parameter list", action='store_true')
 parser.add_argument("-t", "--tls", help="disable tls", action="store_false")
 args = parser.parse_args()
@@ -25,22 +26,28 @@ args = parser.parse_args()
 if(args.environment == 'DR'):
     host = 'prodqm-wcs-9fbb.qm.aws-eu-west-1.mq.appdomain.cloud'
     port = '32028'
-elif(args.environment == 'PRD'):
+    queue_manager = 'CMPRODQM_WCS'
+elif(args.environment == 'PRE'):
     host = 'cmprepqm-wcs-0f87.qm2.eu-gb.mq.appdomain.cloud'
-    port = '30726'
+    port = '31510'
+    queue_manager = 'PREPQM_WCS'
+elif(args.environment == 'PRD'):
+    host = 'prodqm-wcs-0f87.qm2.eu-gb.mq.appdomain.cloud'
+    port = '30112'
+    queue_manager = 'PRODQM_WCS'    
 else:
     print("Invalid environment")
     sys.exit()
 
 channel = args.channel
-queue_manager = args.queuemanager
+
 
 conn_info = '%s(%s)' % (host, port)
 
 #cipher acepted by ibm cloud TLS 1.2 or Higher
 #ref https://www.ibm.com/docs/en/ibm-mq/9.0?topic=jms-tls-cipherspecs-ciphersuites-in-mq-classes
 ssl_cipher_spec = 'TLS_RSA_WITH_AES_256_CBC_SHA256'
-key_repo_location = '/home/ec2-user/key'
+key_repo_location = os.getenv('HOME') + '/key'
 
 user = args.user
 password = args.password
