@@ -1,32 +1,39 @@
 import logging
 import re
 import pymqi
+import argparse
+import sys
 
 logging.basicConfig(level=logging.INFO)
 
 # Readme first - this code retrieve all queued from  a queue manager, connecting with or without tls. It retrieves most important settings
 # to be compared between envs
 # Env Settings, uncomment accordingly
+ 
+parser = argparse.ArgumentParser(description="Inquire and print Queue parameters from a queue manager",
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-#TODO transform connection settings into parameter
-#test environemt settings
-#queue_manager = 'TESTQM_WCS'
-#channel = 'CLOUD.APP.SVRCONN'
-#host = 'testqm-wcs-9fbb.qm2.eu-de.mq.appdomain.cloud'
-#port = '31075'
-#host = 'perfqm-wcs-9fbb.qm2.eu-de.mq.appdomain.cloud'
-#port = '31510'
+parser.add_argument("-e", "--environment", action="store_true", help="valid values DR or PRD", default='DR')
+parser.add_argument("-u", "--user", action="store_true", help="User")
+parser.add_argument("-p", "--password", help="password")
+parser.add_argument("-q", "--queuemanager", help="Queue manager to enquire", default="CMPRODQM_WCS")
+parser.add_argument("-c", "--channel", help="Channel to enquire", default="CLOUD.APP.SVRCONN")
+parser.add_argument("-f", "--full", help="full parameter list", action='store_true')
+parser.add_argument("-t", "--tls", help="disable tls", action="store_false")
+args = parser.parse_args()
 
-#DR environment settings
-channel = 'CLOUD.APP.SVRCONN'
-queue_manager = 'CMPRODQM_WCS'
-host = 'prodqm-wcs-9fbb.qm.aws-eu-west-1.mq.appdomain.cloud'
-port = '32028'
+if(args.environment == 'DR'):
+    host = 'prodqm-wcs-9fbb.qm.aws-eu-west-1.mq.appdomain.cloud'
+    port = '32028'
+elif(args.environment == 'PRD'):
+    host = 'cmprepqm-wcs-0f87.qm2.eu-gb.mq.appdomain.cloud'
+    port = '30726'
+else:
+    print("Invalid environment")
+    sys.exit()
 
-#PRD environment settings
-#queue_manager = 'CMPRODQM_WCS'
-#host = 'cmprepqm-wcs-0f87.qm2.eu-gb.mq.appdomain.cloud'
-#port = '30726'
+channel = args.channel
+queue_manager = args.queuemanager
 
 conn_info = '%s(%s)' % (host, port)
 
@@ -35,12 +42,8 @@ conn_info = '%s(%s)' % (host, port)
 ssl_cipher_spec = 'TLS_RSA_WITH_AES_256_CBC_SHA256'
 key_repo_location = '/home/ec2-user/key'
 
-#user = 'mqtestuser'
-#password = 'eiz8M9rzDlXFmyTlJ8a8ul5_RZfkeO5TyiKVe4xkh-Qt'
-
-#TODO put it on secrets
-user = '<MQ User admin display access for this case>'
-password = '<ibm key>'
+user = args.user
+password = args.password
 
 
 #Bellow code official reference
@@ -68,10 +71,12 @@ sco = pymqi.SCO()
 sco.KeyRepository = key_repo_location
 
 #SSL connection
-qmgr = pymqi.QueueManager(None)
-qmgr.connect_with_options(queue_manager, user = user, password = password, cd=cd, sco=sco)
-#NO SSL
-#qmgr = pymqi.connect(queue_manager, channel, conn_info, user, password)
+if(args.tls):
+    qmgr = pymqi.QueueManager(None)
+    qmgr.connect_with_options(queue_manager, user = user, password = password, cd=cd, sco=sco)
+else:
+    #NO SSL
+    qmgr = pymqi.connect(queue_manager, channel, conn_info, user, password)
 
 pcf = pymqi.PCFExecute(qmgr)
 
@@ -101,6 +106,35 @@ else:
             print (queue_name.strip()+'->MQIA_INHIBIT_GET,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_GET])
             print (queue_name.strip()+'->MQIA_INHIBIT_PUT,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_PUT])
             print (queue_name.strip()+'->MQIA_MAX_Q_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
-           
+            if( args.full ):
+                print (queue_name+'->MQIA_ACCOUNTING_Q,%s' % queue_info[pymqi.CMQC.MQIA_ACCOUNTING_Q ])
+                print (queue_name+'->MQCA_CLUSTER_NAME %s ' % queue_info[pymqi.CMQC.MQCA_CLUSTER_NAME])
+                print (queue_name+'->MQIA_CURRENT_Q_DEPTH ,%s' % queue_info[pymqi.CMQC.MQIA_CURRENT_Q_DEPTH])
+                print (queue_name+'->MQIA_DEF_PUT_RESPONSE_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEF_PUT_RESPONSE_TYPE])
+                print (queue_name+'->MQIA_DEF_READ_AHEAD,%s' % queue_info[pymqi.CMQC.MQIA_DEF_READ_AHEAD])
+                print (queue_name+'->MQIA_DEFINITION_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEFINITION_TYPE])
+                print (queue_name+'->MQIA_DIST_LISTS,%s' % queue_info[pymqi.CMQC.MQIA_DIST_LISTS])
+                print (queue_name+'->MQIA_HARDEN_GET_BACKOUT,%s' % queue_info[pymqi.CMQC.MQIA_HARDEN_GET_BACKOUT])
+                print (queue_name+'->MQIA_MAX_MSG_LENGTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_MSG_LENGTH])
+                print (queue_name+'->MQIA_MONITORING_Q,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
+                print (queue_name+'->MQIA_MSG_DELIVERY_SEQUENCE,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
+                print (queue_name+'->MQIA_NPM_CLASS,%s' % queue_info[pymqi.CMQC.MQIA_NPM_CLASS])
+                print (queue_name+'->MQIA_OPEN_INPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_INPUT_COUNT])
+                print (queue_name+'->MQIA_OPEN_OUTPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_OUTPUT_COUNT])
+                print (queue_name+'->MQIA_PROPERTY_CONTROL,%s' % queue_info[pymqi.CMQC.MQIA_PROPERTY_CONTROL])
+                print (queue_name+'->MQIA_Q_DEPTH_HIGH_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_EVENT])
+                print (queue_name+'->MQIA_Q_DEPTH_HIGH_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_LIMIT])
+                print (queue_name+'->MQIA_Q_DEPTH_LOW_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_EVENT])
+                print (queue_name+'->MQIA_Q_DEPTH_LOW_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_LIMIT])
+                print (queue_name+'->MQIA_Q_DEPTH_MAX_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_MAX_EVENT])
+                print (queue_name+'->MQIA_Q_SERVICE_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_Q_SERVICE_INTERVAL])
+                print (queue_name+'->MQIA_Q_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_Q_TYPE])
+                print (queue_name+'->MQIA_RETENTION_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_RETENTION_INTERVAL])
+                print (queue_name+'->MQIA_SCOPE,%s' % queue_info[pymqi.CMQC.MQIA_SCOPE])
+                print (queue_name+'->MQIA_STATISTICS_Q,%s' % queue_info[pymqi.CMQC.MQIA_STATISTICS_Q])
+                print (queue_name+'->MQIA_TRIGGER_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_DEPTH])
+                print (queue_name+'->MQIA_TRIGGER_MSG_PRIORITY,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_MSG_PRIORITY])
+                print (queue_name+'->MQIA_USAGE,%s' % queue_info[pymqi.CMQC.MQIA_USAGE])
 
+           
 qmgr.disconnect()
