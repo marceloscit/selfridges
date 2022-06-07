@@ -13,8 +13,8 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description="Inquire and print Queue parameters from a queue manager",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-e", "--environment", action="store_true", help="valid values DR or PRD", default='DR')
-parser.add_argument("-u", "--user", action="store_true", help="User")
+parser.add_argument("-e", "--environment", help="valid values DR or PRD", default='DR')
+parser.add_argument("-u", "--user", help="user",  help="User")
 parser.add_argument("-p", "--password", help="password")
 parser.add_argument("-q", "--queuemanager", help="Queue manager to enquire", default="CMPRODQM_WCS")
 parser.add_argument("-c", "--channel", help="Channel to enquire", default="CLOUD.APP.SVRCONN")
@@ -56,7 +56,7 @@ password = args.password
 prefix = '*'
 queue_type = pymqi.CMQC.MQQT_LOCAL
 
-args = {pymqi.CMQC.MQCA_Q_NAME: prefix,
+inquire_args = {pymqi.CMQC.MQCA_Q_NAME: prefix,
         pymqi.CMQC.MQIA_Q_TYPE: queue_type}
 
 
@@ -80,10 +80,10 @@ else:
 
 pcf = pymqi.PCFExecute(qmgr)
 
-response = pcf.MQCMD_INQUIRE_Q(args)
+response = pcf.MQCMD_INQUIRE_Q(inquire_args)
 
 try:
-    response = pcf.MQCMD_INQUIRE_Q(args)
+    response = pcf.MQCMD_INQUIRE_Q(inquire_args)
 except pymqi.MQMIError as e:
     if e.comp == pymqi.CMQC.MQCC_FAILED and e.reason == pymqi.CMQC.MQRC_UNKNOWN_OBJECT_NAME:
         logging.info('No queues matched given arguments.')
@@ -136,5 +136,4 @@ else:
                 print (queue_name+'->MQIA_TRIGGER_MSG_PRIORITY,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_MSG_PRIORITY])
                 print (queue_name+'->MQIA_USAGE,%s' % queue_info[pymqi.CMQC.MQIA_USAGE])
 
-           
 qmgr.disconnect()
