@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(description="Inquire and print Queue parameters from a queue manager",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("-e", "--environment", help="valid values DR or PRD", nargs='?', default='DR')
+parser.add_argument("-e", "--environment", help="valid values TST, DR or PRD", nargs='?', default='DR')
 parser.add_argument("-u", "--user", help="user")
 parser.add_argument("-p", "--password", help="password")
 parser.add_argument("-q", "--queuemanager", help="Queue manager to enquire", nargs='?', default="CMPRODQM_WCS")
@@ -35,6 +35,15 @@ elif(args.environment == 'PRD'):
     host = 'prodqm-wcs-0f87.qm2.eu-gb.mq.appdomain.cloud'
     port = '30112'
     queue_manager = 'PRODQM_WCS'    
+elif(args.environment == 'TST'):
+    host = 'testqm-wcs-9fbb.qm2.eu-de.mq.appdomain.cloud'
+    port = '31075'
+    queue_manager = 'TESTQM_WCS'
+elif(args.environment == 'D02'):
+    host = 'sdevqm-wcs-9fbb.qm2.eu-de.mq.appdomain.cloud'
+    port = '31466'
+    queue_manager = 'SDEVQM_WCS'
+        
 else:
     print("Invalid environment")
     sys.exit()
@@ -99,48 +108,51 @@ except pymqi.MQMIError as e:
 else:
     #print response
     for queue_info in response:
-        queue_name = queue_info[pymqi.CMQC.MQCA_Q_NAME]
+        try:
+            queue_name = queue_info[pymqi.CMQC.MQCA_Q_NAME]
 
-        #skip system queues
-        if (re.match('^SYSTEM', queue_name) or re.match('^AMQ', queue_name) or re.match('^MQ', queue_name)):
-            pass
-        #logging.info('Found queue `%s`' % queue_name)
-        else:
-            print (queue_name.strip()+'->MQCA_Q_DESC,%s' % queue_info[pymqi.CMQC.MQCA_Q_DESC])
-            print (queue_name.strip()+'->MQIA_DEF_INPUT_OPEN_OPTION,%s' % queue_info[pymqi.CMQC.MQIA_DEF_INPUT_OPEN_OPTION])
-            print (queue_name.strip()+'->MQIA_DEF_PERSISTENCE,%s' % queue_info[pymqi.CMQC.MQIA_DEF_PERSISTENCE])
-            print (queue_name.strip()+'->MQIA_SHAREABILITY,%s' % queue_info[pymqi.CMQC.MQIA_SHAREABILITY])
-            print (queue_name.strip()+'->MQIA_INHIBIT_GET,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_GET])
-            print (queue_name.strip()+'->MQIA_INHIBIT_PUT,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_PUT])
-            print (queue_name.strip()+'->MQIA_MAX_Q_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
-            if( args.full ):
-                print (queue_name+'->MQIA_ACCOUNTING_Q,%s' % queue_info[pymqi.CMQC.MQIA_ACCOUNTING_Q ])
-                print (queue_name+'->MQCA_CLUSTER_NAME %s ' % queue_info[pymqi.CMQC.MQCA_CLUSTER_NAME])
-                print (queue_name+'->MQIA_CURRENT_Q_DEPTH ,%s' % queue_info[pymqi.CMQC.MQIA_CURRENT_Q_DEPTH])
-                print (queue_name+'->MQIA_DEF_PUT_RESPONSE_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEF_PUT_RESPONSE_TYPE])
-                print (queue_name+'->MQIA_DEF_READ_AHEAD,%s' % queue_info[pymqi.CMQC.MQIA_DEF_READ_AHEAD])
-                print (queue_name+'->MQIA_DEFINITION_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEFINITION_TYPE])
-                print (queue_name+'->MQIA_DIST_LISTS,%s' % queue_info[pymqi.CMQC.MQIA_DIST_LISTS])
-                print (queue_name+'->MQIA_HARDEN_GET_BACKOUT,%s' % queue_info[pymqi.CMQC.MQIA_HARDEN_GET_BACKOUT])
-                print (queue_name+'->MQIA_MAX_MSG_LENGTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_MSG_LENGTH])
-                print (queue_name+'->MQIA_MONITORING_Q,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
-                print (queue_name+'->MQIA_MSG_DELIVERY_SEQUENCE,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
-                print (queue_name+'->MQIA_NPM_CLASS,%s' % queue_info[pymqi.CMQC.MQIA_NPM_CLASS])
-                print (queue_name+'->MQIA_OPEN_INPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_INPUT_COUNT])
-                print (queue_name+'->MQIA_OPEN_OUTPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_OUTPUT_COUNT])
-                print (queue_name+'->MQIA_PROPERTY_CONTROL,%s' % queue_info[pymqi.CMQC.MQIA_PROPERTY_CONTROL])
-                print (queue_name+'->MQIA_Q_DEPTH_HIGH_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_EVENT])
-                print (queue_name+'->MQIA_Q_DEPTH_HIGH_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_LIMIT])
-                print (queue_name+'->MQIA_Q_DEPTH_LOW_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_EVENT])
-                print (queue_name+'->MQIA_Q_DEPTH_LOW_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_LIMIT])
-                print (queue_name+'->MQIA_Q_DEPTH_MAX_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_MAX_EVENT])
-                print (queue_name+'->MQIA_Q_SERVICE_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_Q_SERVICE_INTERVAL])
-                print (queue_name+'->MQIA_Q_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_Q_TYPE])
-                print (queue_name+'->MQIA_RETENTION_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_RETENTION_INTERVAL])
-                print (queue_name+'->MQIA_SCOPE,%s' % queue_info[pymqi.CMQC.MQIA_SCOPE])
-                print (queue_name+'->MQIA_STATISTICS_Q,%s' % queue_info[pymqi.CMQC.MQIA_STATISTICS_Q])
-                print (queue_name+'->MQIA_TRIGGER_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_DEPTH])
-                print (queue_name+'->MQIA_TRIGGER_MSG_PRIORITY,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_MSG_PRIORITY])
-                print (queue_name+'->MQIA_USAGE,%s' % queue_info[pymqi.CMQC.MQIA_USAGE])
+            #skip system queues
+            if (re.match('^SYSTEM', queue_name) or re.match('^AMQ', queue_name) or re.match('^MQ', queue_name)):
+                pass
+            #logging.info('Found queue `%s`' % queue_name)
+            else:
+                print (queue_name.strip()+'->MQCA_Q_DESC,%s' % queue_info[pymqi.CMQC.MQCA_Q_DESC])
+                print (queue_name.strip()+'->MQIA_DEF_INPUT_OPEN_OPTION,%s' % queue_info[pymqi.CMQC.MQIA_DEF_INPUT_OPEN_OPTION])
+                print (queue_name.strip()+'->MQIA_DEF_PERSISTENCE,%s' % queue_info[pymqi.CMQC.MQIA_DEF_PERSISTENCE])
+                print (queue_name.strip()+'->MQIA_SHAREABILITY,%s' % queue_info[pymqi.CMQC.MQIA_SHAREABILITY])
+                print (queue_name.strip()+'->MQIA_INHIBIT_GET,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_GET])
+                print (queue_name.strip()+'->MQIA_INHIBIT_PUT,%s' % queue_info[pymqi.CMQC.MQIA_INHIBIT_PUT])
+                print (queue_name.strip()+'->MQIA_MAX_Q_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
+                if( args.full ):
+                    print (queue_name+'->MQIA_ACCOUNTING_Q,%s' % queue_info[pymqi.CMQC.MQIA_ACCOUNTING_Q ])
+                    print (queue_name+'->MQCA_CLUSTER_NAME %s ' % queue_info[pymqi.CMQC.MQCA_CLUSTER_NAME])
+                    print (queue_name+'->MQIA_CURRENT_Q_DEPTH ,%s' % queue_info[pymqi.CMQC.MQIA_CURRENT_Q_DEPTH])
+                    print (queue_name+'->MQIA_DEF_PUT_RESPONSE_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEF_PUT_RESPONSE_TYPE])
+                    print (queue_name+'->MQIA_DEF_READ_AHEAD,%s' % queue_info[pymqi.CMQC.MQIA_DEF_READ_AHEAD])
+                    print (queue_name+'->MQIA_DEFINITION_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_DEFINITION_TYPE])
+                    print (queue_name+'->MQIA_DIST_LISTS,%s' % queue_info[pymqi.CMQC.MQIA_DIST_LISTS])
+                    print (queue_name+'->MQIA_HARDEN_GET_BACKOUT,%s' % queue_info[pymqi.CMQC.MQIA_HARDEN_GET_BACKOUT])
+                    print (queue_name+'->MQIA_MAX_MSG_LENGTH,%s' % queue_info[pymqi.CMQC.MQIA_MAX_MSG_LENGTH])
+                    print (queue_name+'->MQIA_MONITORING_Q,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
+                    print (queue_name+'->MQIA_MSG_DELIVERY_SEQUENCE,%s' % queue_info[pymqi.CMQC.MQIA_MAX_Q_DEPTH])
+                    print (queue_name+'->MQIA_NPM_CLASS,%s' % queue_info[pymqi.CMQC.MQIA_NPM_CLASS])
+                    print (queue_name+'->MQIA_OPEN_INPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_INPUT_COUNT])
+                    print (queue_name+'->MQIA_OPEN_OUTPUT_COUNT,%s' % queue_info[pymqi.CMQC.MQIA_OPEN_OUTPUT_COUNT])
+                    print (queue_name+'->MQIA_PROPERTY_CONTROL,%s' % queue_info[pymqi.CMQC.MQIA_PROPERTY_CONTROL])
+                    print (queue_name+'->MQIA_Q_DEPTH_HIGH_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_EVENT])
+                    print (queue_name+'->MQIA_Q_DEPTH_HIGH_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_HIGH_LIMIT])
+                    print (queue_name+'->MQIA_Q_DEPTH_LOW_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_EVENT])
+                    print (queue_name+'->MQIA_Q_DEPTH_LOW_LIMIT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_LOW_LIMIT])
+                    print (queue_name+'->MQIA_Q_DEPTH_MAX_EVENT,%s' % queue_info[pymqi.CMQC.MQIA_Q_DEPTH_MAX_EVENT])
+                    print (queue_name+'->MQIA_Q_SERVICE_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_Q_SERVICE_INTERVAL])
+                    print (queue_name+'->MQIA_Q_TYPE,%s' % queue_info[pymqi.CMQC.MQIA_Q_TYPE])
+                    print (queue_name+'->MQIA_RETENTION_INTERVAL,%s' % queue_info[pymqi.CMQC.MQIA_RETENTION_INTERVAL])
+                    print (queue_name+'->MQIA_SCOPE,%s' % queue_info[pymqi.CMQC.MQIA_SCOPE])
+                    print (queue_name+'->MQIA_STATISTICS_Q,%s' % queue_info[pymqi.CMQC.MQIA_STATISTICS_Q])
+                    print (queue_name+'->MQIA_TRIGGER_DEPTH,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_DEPTH])
+                    print (queue_name+'->MQIA_TRIGGER_MSG_PRIORITY,%s' % queue_info[pymqi.CMQC.MQIA_TRIGGER_MSG_PRIORITY])
+                    print (queue_name+'->MQIA_USAGE,%s' % queue_info[pymqi.CMQC.MQIA_USAGE])
+        except:
+            print('Not Authorized')
 
 qmgr.disconnect()

@@ -1,7 +1,6 @@
 import logging
+import re
 import pymqi
-from pymqi import CMQC
-from pymqi import CMQCFC
 import argparse
 import sys
 import os
@@ -99,22 +98,43 @@ pcf = pymqi.PCFExecute(qmgr)
 
 response = pcf.MQCMD_INQUIRE_Q(inquire_args)
 
-pcf = pymqi.PCFExecute(qmgr)
+wtcserviceaccountusers = ['mqtestuser', 'mqpprduser', 'mqproduser']
+soaserviceaccountusers = ['cogtestsoa', 'cogpprdsoa', 'cogprodsoa']
+ibminternalccountusers = ['mqwriter', 'mqreader']
+monitoringusers = ['jenkins']
 
-auth_args = {pymqi.CMQCFC.MQIACF_AUTH_OPTIONS: pymqi.CMQCFC.MQAUTHOPT_ENTITY_EXPLICIT + 
-pymqi.CMQCFC.MQAUTHOPT_NAME_ALL_MATCHING + CMQCFC.MQAUTHOPT_NAME_AS_WILDCARD, 
-pymqi.CMQCFC.MQCACF_AUTH_PROFILE_NAME: '*', 
-pymqi.CMQCFC.MQIACF_OBJECT_TYPE: CMQC.MQOT_Q, 
-pymqi.CMQCFC.MQCACF_ENTITY_NAME: 'CLOUD.ADMIN.SVRCONN', 
-pymqi.CMQCFC.MQIACF_ENTITY_TYPE: pymqi.CMQZC.MQZAET_PRINCIPAL, 
-pymqi.CMQCFC.MQIACF_AUTH_PROFILE_ATTRS: pymqi.CMQCFC.MQIACF_ALL} 
 
-authrec_response = pcf.MQCMD_INQUIRE_AUTH_RECS(auth_args) 
-print(authrec_response)
+try:
+    response = pcf.MQCMD_INQUIRE_Q(inquire_args)
+except pymqi.MQMIError as e:
+    if e.comp == pymqi.CMQC.MQCC_FAILED and e.reason == pymqi.CMQC.MQRC_UNKNOWN_OBJECT_NAME:
+        logging.info('No queues matched given arguments.')
+    else:
+        raise
+else:
+    #print response
+    for queue_info in response:
+        try:
+            queue_name = queue_info[pymqi.CMQC.MQCA_Q_NAME]
 
-for queue_authrec_info in authrec_response: 
-    profile_name = queue_authrec_info[pymqi.CMQCFC.MQCACF_AUTH_PROFILE_NAME].decode('utf-8') 
-    if 'SYSTEM' not in profile_name: 
-        print('queue_authrec_info = ',queue_authrec_info, '\n')
+            #skip system queues
+            if (re.match('^SYSTEM', queue_name) or re.match('^AMQ', queue_name) or re.match('^MQ', queue_name)):
+                pass
+            #logging.info('Found queue `%s`' % queue_name)
+            else:
+                for wtcuser in wtcserviceaccountusers:
+                    print('SET AUTHREC PROFILE('+  queue_name.strip() + ')  GROUP(\'' + wtcuser + '\' ) OBJTYPE(QUEUE) AUTHADD(PASSID, SETID, DSP, INQ, BROWSE, GET, PUT, SET)')
+                for soauser in soaserviceaccountusers:
+                    if (re.match('^_DLQ', queue_name) or re.match('^AUTH_DLQ', queue_name)):
+                        print('SET AUTHREC PROFILE('+  queue_name.strip() + ')  GROUP(\'' + soauser + '\' ) OBJTYPE(QUEUE) AUTHADD(PASSID, SETID, DSP, INQ, BROWSE, GET, PUT, SET)')
+                    else:
+                        print('SET AUTHREC PROFILE('+  queue_name.strip() + ')  GROUP(\'' + soauser + '\' ) OBJTYPE(QUEUE) AUTHADD(PASSID, SETID, DSP, INQ, BROWSE, GET, PUT)')
+                for ibmuser in ibminternalccountusers:
+                    print('SET AUTHREC PROFILE('+  queue_name.strip() + ')  GROUP(\'' + ibmuser + '\' ) OBJTYPE(QUEUE) AUTHADD(PASSID, SETID, DSP, INQ, BROWSE, GET, PUT, SET)')
+                for readuser in monitoringusers:
+                    print('SET AUTHREC PROFILE('+  queue_name.strip() + ')  GROUP(\'' + readuser + '\' ) OBJTYPE(QUEUE) AUTHADD(PASSID, SETID, DSP, INQ, SET)')
+
+        except:
+            print('Not Authorized')
 
 qmgr.disconnect()
