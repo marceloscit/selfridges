@@ -13,8 +13,6 @@ for line in lines:
     if 'Display authority record details' in line or 'command responses received.' in line or 'Copyright IBM Corp' in line or 'Starting MQSC' in line or 'command responses received' in line:
 
         if header != {}:
-            print('----')
-            print(data)
             if firstLine:
                 df = pd.DataFrame(header)
                 firstLine  = False
@@ -23,7 +21,9 @@ for line in lines:
         data = {}
         pass
     else:
-        result = re.findall('(\w+([^()]*))', line)
+        print('-------')
+        result = re.findall('(\w+([^()]+)|([*]\*))', line)
+        print(result)
         it = iter(result)
 
         for x, y in zip(it, it):  
@@ -31,6 +31,10 @@ for line in lines:
                 header[x[0]] = [y[0]]
             else:
                 data[x[0]] = y[0]
+            
+
+
+        
     
 df.to_excel('pandas_to_excel.xlsx', sheet_name='new_sheet_name')
 
