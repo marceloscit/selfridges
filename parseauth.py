@@ -32,10 +32,6 @@ for line in lines:
             else:
                 data[x[0]] = y[0]
             
-
-
-        
-    
 df.to_excel('pandas_to_excel.xlsx', sheet_name='new_sheet_name')
 
 
